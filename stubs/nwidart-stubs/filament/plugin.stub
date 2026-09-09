@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $MODULE_NAMESPACE$\$STUDLY_NAME$\Filament;
+
+use Filament\Contracts\Plugin;
+use Filament\Panel;
+
+class $STUDLY_NAME$FilamentPlugin implements Plugin
+{
+    public function getId(): string
+    {
+        return '$STUDLY_NAME$';
+    }
+
+    public function register(Panel $panel): void
+    {
+        $panel
+            ->discoverResources(
+                in: module_path($this->getId(), 'app/Filament/Resources'),
+                for: "$MODULE_NAMESPACE$\\{$this->getId()}\\Filament\\Resources",
+            )
+            ->discoverPages(
+                in: module_path($this->getId(), 'app/Filament/Pages'),
+                for: "$MODULE_NAMESPACE$\\{$this->getId()}\\Filament\\Pages",
+            )
+            ->discoverWidgets(
+                in: module_path($this->getId(), 'app/Filament/Widgets'),
+                for: "$MODULE_NAMESPACE$\\{$this->getId()}\\Filament\\Widgets",
+            );
+    }
+
+    public function boot(Panel $panel): void
+    {
+        //
+    }
+}

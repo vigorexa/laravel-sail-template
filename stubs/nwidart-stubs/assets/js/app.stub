@@ -1,0 +1,2 @@
+// Точка входа JS модуля $STUDLY_NAME$.
+// Подключение в Blade: @vite('app-modules/$STUDLY_NAME$/resources/assets/js/app.js')

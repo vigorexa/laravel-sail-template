@@ -1,0 +1,39 @@
+---
+
+services:
+
+  mailpit:
+    image: axllent/mailpit:v1.19.3
+    env_file:
+      - .env
+    environment:
+      MP_DATABASE: /data/mailpit.db
+    volumes:
+      - 'application-mailpit:/data'
+    networks:
+      - mailpit
+      - app_traefik_reverse-proxy
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.swarm.network=app_traefik_reverse-proxy
+        - traefik.http.services.mailpit.loadbalancer.server.port=8025
+        - traefik.http.routers.mailpit.rule=Host(`${MAILPIT_HOST:-mailpit.localhost}`)
+    logging:
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+
+networks:
+  mailpit:
+    name: app_mailpit_mailpit
+    driver: overlay
+    attachable: true
+  app_traefik_reverse-proxy:
+    external: true
+
+
+volumes:
+  application-mailpit:
+    driver: local

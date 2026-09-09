@@ -1,0 +1,107 @@
+---
+
+services:
+
+    laravel:
+        image: ${IMAGE}
+        command: ["/usr/bin/php", "-d", "variables_order=EGPCS", "/var/www/html/artisan", "octane:start", "--server=swoole", "--host=0.0.0.0", "--port=80"]
+        env_file:
+            - .env
+        networks:
+            - app_pgsql_pgsql
+            - app_keydb_keydb
+            - app_mailpit_mailpit
+            - app_rustfs_rustfs
+            - app_traefik_reverse-proxy
+        logging:
+            options:
+                max-size: "200k"
+                max-file: "10"
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost/up"]
+            interval: 10s
+            start_period: 30s
+            retries: 5
+            timeout: 30s
+        deploy:
+            labels:
+                - traefik.enable=true
+                - traefik.swarm.network=app_traefik_reverse-proxy
+                - traefik.http.services.laravel.loadbalancer.server.port=80
+                - traefik.http.routers.laravel.rule=Host(`${APP_HOST:-localhost}`)
+            replicas: 1
+            update_config:
+                parallelism: 1
+                delay: 10s
+                order: start-first
+            restart_policy:
+                condition: on-failure
+
+    horizon:
+        image: ${IMAGE}
+        command: ["/usr/bin/php", "/var/www/html/artisan", "horizon"]
+        env_file:
+            - .env
+        networks:
+            - app_pgsql_pgsql
+            - app_keydb_keydb
+            - app_mailpit_mailpit
+            - app_rustfs_rustfs
+        stop_grace_period: 60s
+        logging:
+            options:
+                max-size: "200k"
+                max-file: "10"
+        healthcheck:
+            test: ["CMD", "/usr/bin/php", "/var/www/html/artisan", "horizon:status"]
+            interval: 10s
+            start_period: 30s
+            retries: 5
+            timeout: 30s
+        deploy:
+            replicas: 1
+            update_config:
+                parallelism: 1
+                delay: 10s
+            restart_policy:
+                condition: on-failure
+
+    cron:
+        image: ${IMAGE}
+        command: ["/usr/sbin/crond", "-f"]
+        env_file:
+            - .env
+        networks:
+            - app_pgsql_pgsql
+            - app_keydb_keydb
+            - app_mailpit_mailpit
+            - app_rustfs_rustfs
+        logging:
+            options:
+                max-size: "200k"
+                max-file: "10"
+        deploy:
+            replicas: 1
+            update_config:
+                parallelism: 1
+                delay: 10s
+            restart_policy:
+                condition: on-failure
+
+
+networks:
+    app_traefik_reverse-proxy:
+        external: true
+    app_pgsql_pgsql:
+        external: true
+    app_keydb_keydb:
+        external: true
+    app_mailpit_mailpit:
+        external: true
+    app_rustfs_rustfs:
+        external: true
+
+
+volumes:
+    application-keydb:
+        driver: local

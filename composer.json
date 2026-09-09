@@ -1,0 +1,79 @@
+{
+    "name": "vigorexa/laravel-sail-template",
+    "type": "project",
+    "require": {
+        "php": "^8.4",
+        "filament/filament": "^4.3",
+        "laravel/framework": "^12.0",
+        "laravel/horizon": "^5.24",
+        "laravel/octane": "^2.12",
+        "laravel/tinker": "^2.9",
+        "livewire/livewire": "^3.8",
+        "nwidart/laravel-modules": "^13.0",
+        "sentry/sentry-laravel": "^4.27",
+        "spatie/laravel-permission": "^7.3"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.23",
+        "laravel/boost": "^2.4",
+        "laravel/pint": "^1.15",
+        "laravel/sail": "^1.26",
+        "laravel/telescope": "^5.23",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.0",
+        "phpunit/phpunit": "^11.0.1",
+        "spatie/laravel-ignition": "^2.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi",
+            "@php artisan filament:upgrade"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+            "@php artisan boost:update --ansi"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan migrate --graceful --ansi"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": ["laravel/telescope"]
+        },
+        "merge-plugin": {
+            "include": [
+                "app-modules/*/composer.json"
+            ]
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "php-http/discovery": true,
+            "wikimedia/composer-merge-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

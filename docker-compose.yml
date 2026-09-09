@@ -1,0 +1,89 @@
+services:
+
+    laravel:
+        build:
+            context: .
+            dockerfile: docker/laravel/Dockerfile
+            target: development
+        command: ["/usr/bin/php", "-d", "variables_order=EGPCS", "/var/www/html/artisan", "serve", "--host=0.0.0.0", "--port=80"]
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        ports:
+            - '${APP_PORT:-80}:80'
+            - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
+        environment:
+            LARAVEL_SAIL: 1
+            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
+            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
+            IGNITION_LOCAL_SITES_PATH: '${PWD}'
+            PHP_IDE_CONFIG: '${PHP_IDE_CONFIG:-serverName=Docker}'
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - application
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:80/up"]
+            interval: 10s
+            start_period: 30s
+            retries: 3
+            timeout: 5s
+        depends_on:
+            pgsql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            mailpit:
+                condition: service_started
+
+    pgsql:
+        image: 'postgres:17'
+        ports:
+            - '127.0.0.1:${FORWARD_DB_PORT:-5432}:5432'
+        environment:
+            PGPASSWORD: '${DB_PASSWORD:-secret}'
+            POSTGRES_DB: '${DB_DATABASE}'
+            POSTGRES_USER: '${DB_USERNAME}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+        volumes:
+            - 'application-pgsql:/var/lib/postgresql/data'
+        networks:
+            - application
+        healthcheck:
+            test: ["CMD", "pg_isready", "-q", "-d", "${DB_DATABASE}", "-U", "${DB_USERNAME}"]
+            interval: 10s
+            start_period: 30s
+            retries: 3
+            timeout: 5s
+
+    redis:
+        image: 'redis:7.4-alpine'
+        ports:
+            - '127.0.0.1:${FORWARD_REDIS_PORT:-6379}:6379'
+        volumes:
+            - 'application-redis:/data'
+        networks:
+            - application
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            start_period: 30s
+            retries: 3
+            timeout: 5s
+
+    mailpit:
+        image: 'axllent/mailpit:v1.19.3'
+        ports:
+            - '${FORWARD_MAILPIT_PORT:-1025}:1025'
+            - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
+        networks:
+            - application
+
+networks:
+    application:
+        driver: bridge
+
+volumes:
+    application-pgsql:
+        driver: local
+    application-redis:
+        driver: local

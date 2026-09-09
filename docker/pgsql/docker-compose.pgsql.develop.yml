@@ -1,0 +1,79 @@
+---
+
+services:
+
+  pgsql:
+    image: 'postgres:17'
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: '${POSTGRES_DB}'
+      POSTGRES_USER: '${POSTGRES_USER}'
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD:-secret}'
+      PGPASSWORD: '${PGPASSWORD:-secret}'
+    networks:
+      - pgsql
+    volumes:
+      - 'application-pgsql:/var/lib/postgresql/data'
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}" ]
+      interval: 10s
+      start_period: 30s
+      retries: 3
+      timeout: 5s
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  pgadmin:
+    image: dpage/pgadmin4:8.14
+    env_file:
+      - .env
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-password}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    configs:
+      - source: pgadmin-pgpass
+        target: /config/pgpass
+        uid: "5050"
+        gid: "5050"
+        mode: 0400
+      - source: pgadmin-servers
+        target: /pgadmin4/servers.json
+        mode: 0444
+    networks:
+      - pgsql
+      - app_traefik_reverse-proxy
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.swarm.network=app_traefik_reverse-proxy
+        - traefik.http.services.pgadmin.loadbalancer.server.port=80
+        - traefik.http.routers.pgadmin.rule=Host(`${PGADMIN_HOST:-pgadmin.localhost}`)
+    logging:
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+
+networks:
+  pgsql:
+    name: app_pgsql_pgsql
+    driver: overlay
+    attachable: true
+  app_traefik_reverse-proxy:
+    external: true
+
+
+volumes:
+  application-pgsql:
+    driver: local
+
+
+configs:
+  pgadmin-servers:
+    file: ./configs/pgadmin-servers.json
+  pgadmin-pgpass:
+    file: ./configs/pgadmin-pgpass

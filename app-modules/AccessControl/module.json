@@ -1,0 +1,14 @@
+{
+    "name": "AccessControl",
+    "alias": "access-control",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\AccessControl\\Providers\\AccessControlServiceProvider"
+    ],
+    "filament": {
+        "plugin": "Modules\\AccessControl\\Filament\\AccessControlFilamentPlugin"
+    },
+    "files": []
+}
