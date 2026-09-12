@@ -35,7 +35,7 @@
 6. Накатить миграции в базу данных: `./vendor/bin/sail artisan migrate`
 7. Просеять базу тестовыми данными: `./vendor/bin/sail artisan db:seed && ./vendor/bin/sail artisan module:seed --all`
 8. Создать бакет laravel в rustfs: `make rustfs-create-bucket`
-8. Для работы с AI Агентами установить Laravel Boost: `./vendor/bin/sail artisan boost:install`
+9. Для работы с AI Агентами установить Laravel Boost: `./vendor/bin/sail artisan boost:install`
   - Прим. для PhpStorm AI Assistant: _см. раздел Laravel Boost этого Readme_
 
 ---
