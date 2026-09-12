@@ -100,8 +100,3 @@ networks:
         external: true
     app_rustfs_rustfs:
         external: true
-
-
-volumes:
-    application-keydb:
-        driver: local

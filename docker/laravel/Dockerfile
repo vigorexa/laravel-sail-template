@@ -37,6 +37,8 @@ RUN composer dump-autoload --optimize --ansi \
  && php artisan filament:assets \
  && php artisan storage:link
 
+ENTRYPOINT ["/bin/sh", "-ec", "php artisan optimize --no-interaction && exec /sbin/tini -s -- \"$@\"", "--"]
+
 
 FROM copy-composers AS development
 

@@ -1,7 +1,5 @@
 # Laravel 12 Sail Template
-Мой шаблон для разработки проектов Laravel v12
-
-
+Мой шаблон для разработки [Twelve-Factor](https://12factor.net/ru/) приложений Laravel v12
 
 ## Основные изменения
 - Сборка основана на Laravel Sail — [документация](https://laravel.com/docs/12.x/sail). Базовый образ приложения: [`vigorexa/laravel-sail-core:php85-alpine-slim-latest`](https://hub.docker.com/r/vigorexa/laravel-sail-core)
@@ -12,9 +10,11 @@
     - [`laravel/octane`](https://laravel.com/docs/12.x/octane). Сборка готова к использованию с сервером Swoole
     - [`laravel/boost`](https://laravel.com/docs/12.x/boost). Написаны кастомные скиллы. (Подробнее в разделе ##Laravel Boost)
     - А также [`laravel/horizon`](https://laravel.com/docs/12.x/horizon), [`laravel/telescope`](https://laravel.com/docs/12.x/telescope)
-- Добавлен **Healthcheck** для контейнера `laravel` в `docker-compose.yml` через встроенный `/up` (https://laravel.com/docs/12.x/deployment#the-health-route)
 - Созданы docker-compose файлы инфраструктуры и приложения для деплоя проекта на удаленный сервер. (Подробнее в разделе ##Деплой)
+- Добавлен `project.gitlab-ci.yml` с lint > build > test > deploy стадиями для develop и prod окружений.
+- Модуль AccessControl с базовым управлением Пользователями, Ролями и Правами. Основа: [spatie/laravel-permission](https://spatie.be/docs/laravel-permission/v7)
 
+---
 
 ## Подготовка шаблона
 1. Клонировать git репозиторий этого шаблона. И удалить папку `.git`, так как она содержит в себе git конфиги и историю шаблона
@@ -22,7 +22,7 @@
 3. Скопировать с заменой `project.readme.md` > `readme.md`. И заменить плейсхолдеры `[ProjectName]` и `[ProjectDescription]`.
 4. Следовать пунктам "Развертывание проекта"
 
-
+---
 
 ## Развертывание проекта
 1. Скопировать `.env.example` в `.env`. И `.env.testing.example` в `.env.testing`
@@ -30,12 +30,14 @@
   - Прим. для Windows: Скопируй соответствующую команду из `Makefile`
 3. Запустить сборку проекта: `./vendor/bin/sail up -d --build`
 4. Сгенерировать уникальный ключ криптографии: `./vendor/bin/sail artisan key:generate`
-5. Накатить миграции в базу данных: `./vendor/bin/sail artisan migrate`
-6. Просеять базу тестовыми данными: `./vendor/bin/sail artisan db:seed && ./vendor/bin/sail artisan module:seed --all`
-7. Для работы с AI Агентами установить Laravel Boost: `./vendor/bin/sail artisan boost:install`
+5. Создать S3 bucket в RustFS: `make rustfs-create-bucket`
+6. Накатить миграции в базу данных: `./vendor/bin/sail artisan migrate`
+7. Просеять базу тестовыми данными: `./vendor/bin/sail artisan db:seed && ./vendor/bin/sail artisan module:seed --all`
+8. Для работы с AI Агентами установить Laravel Boost: `./vendor/bin/sail artisan boost:install`
   - Прим. для PhpStorm AI Assistant: _см. раздел Laravel Boost этого Readme_
+9. Скопировать `project.gitlab-ci.yml` > `.gitlab-ci.yml` и заполнить переменные из шапки. При необходимости, раскомментировать deploy стадию
 
-
+---
 
 ## Laravel Boost
 Предустановлен пакет [`laravel/boost`](https://laravel.com/docs/12.x/boost) - MCP Сервер с командами для Laravel
@@ -52,7 +54,7 @@
   - **WorkDir**: _абсолютный путь к проекту на компьютере_;
   - **ServerLevel**: `Project`;
 
-
+---
 
 ## Модули
 
@@ -88,7 +90,7 @@ Filament-плагин модуля указывается в `module.json` → `
 ./vendor/bin/sail artisan module:make-filament-plugin AccessControl
 ```
 
-
+---
 
 ## Полезности
 
@@ -142,7 +144,7 @@ SAIL_XDEBUG_CONFIG="client_host=host.docker.internal idekey=Docker"
 #### Настройка сервера для приема XDebug для **VSCode**:
 - _TODO_
 
-
+---
 
 ## Деплой
 
@@ -158,7 +160,7 @@ SAIL_XDEBUG_CONFIG="client_host=host.docker.internal idekey=Docker"
 | `app_keydb`      | Кэш, сессии и очереди (Redis)          | KeyDB, redis_exporter                            | —                                              |
 | `app_mailpit`    | Перехват исходящей почты (dev/staging) | Mailpit                                          | —                                              |
 | `app_rustfs`     | Файловое хранилище S3                  | RustFS (S3 + Console)                            | `make -C deployment rustfs-create-bucket`      |
-| `app_laravel`    | Само приложение Laravel                | `laravel` (Octane), `horizon`, `cron`            | миграции в контейнере `laravel`                |
+| `app_laravel`    | Само приложение Laravel                | `laravel` (Octane), `horizon`, `cron`            | Миграции в контейнере `laravel`, сидер         |
 
 
 ### Переменные окружения
@@ -191,7 +193,7 @@ SAIL_XDEBUG_CONFIG="client_host=host.docker.internal idekey=Docker"
 - **`deployment/sh-process-compose-file.sh <compose-file>`** — подготовка compose-файла для `docker stack deploy`.
 
 
-### Минимальный воркфлоу деплоя
+### Минимальный воркфлоу ручного деплоя
 
 1. Клон исходников проекта на сервер - `git clone`
 2. Запуск сборки соответствующего образа - `docker build -f ./docker/laravel/Dockerfile --target production -t laravel-application:production .`
