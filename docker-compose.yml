@@ -82,12 +82,6 @@ services:
             - 'application-rustfs:/data'
         networks:
             - application
-        healthcheck:
-            test: ['CMD', 'sh', '-ec', 'curl -fsS http://127.0.0.1:9000/health && curl -fsS http://127.0.0.1:9001/rustfs/console/health']
-            interval: 30s
-            start_period: 40s
-            retries: 3
-            timeout: 10s
 
 
 networks:

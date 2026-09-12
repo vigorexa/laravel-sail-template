@@ -20,7 +20,8 @@
 1. Клонировать git репозиторий этого шаблона. И удалить папку `.git`, так как она содержит в себе git конфиги и историю шаблона
 2. Заменить плейсхолдеры в **composer.json**: Атрибуты `name` и `description`
 3. Скопировать с заменой `project.readme.md` > `readme.md`. И заменить плейсхолдеры `[ProjectName]` и `[ProjectDescription]`.
-4. Следовать пунктам "Развертывание проекта"
+4. Скопировать `project.gitlab-ci.yml` > `.gitlab-ci.yml` и заполнить переменные из шапки. При необходимости, раскомментировать deploy стадию
+5. Следовать пунктам "Развертывание проекта"
 
 ---
 
@@ -33,9 +34,9 @@
 5. Создать S3 bucket в RustFS: `make rustfs-create-bucket`
 6. Накатить миграции в базу данных: `./vendor/bin/sail artisan migrate`
 7. Просеять базу тестовыми данными: `./vendor/bin/sail artisan db:seed && ./vendor/bin/sail artisan module:seed --all`
+8. Создать бакет laravel в rustfs: `make rustfs-create-bucket`
 8. Для работы с AI Агентами установить Laravel Boost: `./vendor/bin/sail artisan boost:install`
   - Прим. для PhpStorm AI Assistant: _см. раздел Laravel Boost этого Readme_
-9. Скопировать `project.gitlab-ci.yml` > `.gitlab-ci.yml` и заполнить переменные из шапки. При необходимости, раскомментировать deploy стадию
 
 ---
 

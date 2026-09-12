@@ -15,8 +15,7 @@ pint:
 
 rustfs-create-bucket:
 	docker run --rm \
-		--network $(COMPOSE_PROJECT_NAME)_application \
-		-e AWS_ENDPOINT=http://rustfs:9000 \
+		-e AWS_ENDPOINT=http://localhost:9000 \
 		-e AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
 		-e AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
 		--entrypoint /bin/sh \
