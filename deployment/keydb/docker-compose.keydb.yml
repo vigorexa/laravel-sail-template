@@ -1,0 +1,46 @@
+---
+
+services:
+
+  keydb:
+    image: 'eqalpha/keydb:latest'
+    env_file:
+      - .env
+    volumes:
+      - 'application-keydb:/data'
+    networks:
+      - keydb
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  redis_exporter:
+    image: oliver006/redis_exporter:v1.67.0
+    environment:
+      REDIS_ADDR: redis://keydb:6379
+    networks:
+      - keydb
+      - app_monitoring_monitoring
+    logging:
+      options:
+        max-size: "200k"
+        max-file: "10"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+
+networks:
+  keydb:
+    name: app_keydb_keydb
+    driver: overlay
+    attachable: true
+  app_monitoring_monitoring:
+    external: true
+
+
+volumes:
+  application-keydb:
+    driver: local

@@ -2,6 +2,20 @@
 Мой шаблон для разработки проектов Laravel v12
 
 
+
+## Основные изменения
+- Сборка основана на Laravel Sail — [документация](https://laravel.com/docs/12.x/sail). Базовый образ приложения: [`vigorexa/laravel-sail-core:php85-alpine-slim-latest`](https://hub.docker.com/r/vigorexa/laravel-sail-core)
+- Предустановлен фреймворк для создания админ панелей Filament [https://filamentphp.com/docs](https://filamentphp.com/docs/4.x/panels/installation)
+- Предустановлена система модулей [`nwidart/laravel-modules`](https://laravelmodules.com/docs/13) с кастомной конфигурацией и stub файлами. (Подробнее в разделе ##Модули)
+- Предустановлены базовые пакеты:
+    - [`laravel/pint`](https://laravel.com/docs/12.x/pint). Конфигурация: https://raw.githubusercontent.com/vigorexa/pint-config/refs/heads/main/pint.json
+    - [`laravel/octane`](https://laravel.com/docs/12.x/octane). Сборка готова к использованию с сервером Swoole
+    - [`laravel/boost`](https://laravel.com/docs/12.x/boost). Написаны кастомные скиллы. (Подробнее в разделе ##Laravel Boost)
+    - А также [`laravel/horizon`](https://laravel.com/docs/12.x/horizon), [`laravel/telescope`](https://laravel.com/docs/12.x/telescope)
+- Добавлен **Healthcheck** для контейнера `laravel` в `docker-compose.yml` через встроенный `/up` (https://laravel.com/docs/12.x/deployment#the-health-route)
+- Созданы docker-compose файлы инфраструктуры и приложения для деплоя проекта на удаленный сервер. (Подробнее в разделе ##Деплой)
+
+
 ## Подготовка шаблона
 1. Клонировать git репозиторий этого шаблона. И удалить папку `.git`, так как она содержит в себе git конфиги и историю шаблона
 2. Заменить плейсхолдеры в **composer.json**: Атрибуты `name` и `description`
@@ -10,31 +24,16 @@
 
 
 
-## Развертывание проекта 
-1. Скопировать `.env.example` в `.env`. И `.env.testing.example` в `.env.testing` 
-2. Запустить установку пакетов командой `make sail-init`. 
-   - Прим. для Windows: Скопируй соответствующую команду из `Makefile`
+## Развертывание проекта
+1. Скопировать `.env.example` в `.env`. И `.env.testing.example` в `.env.testing`
+2. Запустить установку пакетов командой `make sail-init`.
+  - Прим. для Windows: Скопируй соответствующую команду из `Makefile`
 3. Запустить сборку проекта: `./vendor/bin/sail up -d --build`
 4. Сгенерировать уникальный ключ криптографии: `./vendor/bin/sail artisan key:generate`
 5. Накатить миграции в базу данных: `./vendor/bin/sail artisan migrate`
 6. Просеять базу тестовыми данными: `./vendor/bin/sail artisan db:seed && ./vendor/bin/sail artisan module:seed --all`
 7. Для работы с AI Агентами установить Laravel Boost: `./vendor/bin/sail artisan boost:install`
-   - Прим. для PhpStorm AI Assistant: _см. раздел Laravel Boost этого Readme_
-
-
-
-## Основные изменения
-- Сборка основана на Laravel Sail — [документация](https://laravel.com/docs/12.x/sail). Базовый образ приложения: [`vigorexa/laravel-sail-core:php85-alpine-slim-latest`](https://hub.docker.com/r/vigorexa/laravel-sail-core) (публичный, Docker Hub). Multi-stage: `development` (локально и CI-тесты) / `production` (без `tests/` и `phpunit.xml`)
-- Предустановлен фреймворк для создания админ панелей Filament [https://filamentphp.com/docs](https://filamentphp.com/docs/4.x/panels/installation)
-- Предустановлена система модулей [`nwidart/laravel-modules`](https://laravelmodules.com/docs/13) с кастомной конфигурацией
-- Предустановлены базовые пакеты:
-    - [`laravel/pint`](https://laravel.com/docs/12.x/pint). Конфигурация: `${PINT_CONFIG}` в `.env` (по умолчанию — https://raw.githubusercontent.com/vigorexa/pint-config/refs/heads/main/pint.json)
-    - [`laravel/octane`](https://laravel.com/docs/12.x/octane). Сборка готова к использованию с сервером Swoole
-    - [`laravel/horizon`](https://laravel.com/docs/12.x/horizon)
-    - [`laravel/boost`](https://laravel.com/docs/12.x/boost)
-- Добавлен **Healthcheck** для контейнера `laravel` в `docker-compose.yml` через встроенный `/up` (https://laravel.com/docs/12.x/deployment#the-health-route)
-- Добавлен **Makefile**
-- Созданы docker-compose файлы для деплоя инфраструктуры дев/прод окружений в ./docker
+  - Прим. для PhpStorm AI Assistant: _см. раздел Laravel Boost этого Readme_
 
 
 
@@ -145,5 +144,58 @@ SAIL_XDEBUG_CONFIG="client_host=host.docker.internal idekey=Docker"
 
 
 
-## TODO
-- [ ] Автоматический запуск миграций при деплое с откатом при ошибке
+## Деплой
+
+В шаблоне, в директории `./deployment`, находится все необходимое для развертывания приложения на удаленном окружении.
+
+### Стеки
+
+| Стек             | Назначение                             | Контейнеры                                       | После деплоя                                   |
+|------------------|----------------------------------------|--------------------------------------------------|------------------------------------------------|
+| `app_monitoring` | Метрики, логи и дашборды               | Prometheus, Grafana, Loki, OTEL, Alloy, cAdvisor | `make -C deployment grafana-dashboards-import` |
+| `app_traefik`    | Reverse proxy, маршрутизация и SSL     | Traefik                                          | —                                              |
+| `app_pgsql`      | База данных PostgreSQL                 | PostgreSQL, pgAdmin, postgres_exporter           | —                                              |
+| `app_keydb`      | Кэш, сессии и очереди (Redis)          | KeyDB, redis_exporter                            | —                                              |
+| `app_mailpit`    | Перехват исходящей почты (dev/staging) | Mailpit                                          | —                                              |
+| `app_rustfs`     | Файловое хранилище S3                  | RustFS (S3 + Console)                            | `make -C deployment rustfs-create-bucket`      |
+| `app_laravel`    | Само приложение Laravel                | `laravel` (Octane), `horizon`, `cron`            | миграции в контейнере `laravel`                |
+
+
+### Переменные окружения
+
+Все переменные окружения хранятся в одном родительском `./deployment/.env`
+
+Он создается путем копирования `./deployment/.env.example` и заполнением недостающих значений.
+Для удобства они отмечены комментарием `#CHANGEME`
+
+Перед деплоем стека необходимо исполнить команду, которая заполнит `.env.example` сервиса значениями из основного
+```bash
+./deployment/sh-process-env.sh ./deployment/$(SERVICE)/.env.example .env > ./deployment/$(SERVICE)/.env
+```
+
+
+### Makefile (`deployment/Makefile`)
+
+| Команда                                                  | Описание                                    |
+|----------------------------------------------------------|---------------------------------------------|
+| `make -C deployment stack-service-deploy SERVICE=<name>` | Деплой одного стека (см. таблицу выше)      |
+| `make -C deployment stack-full-deploy`                   | Деплой всех стеков                          |
+| `make -C deployment stack-full-rm`                       | Удаление всех стеков                        |
+| `make -C deployment rustfs-create-bucket`                | Создание S3-bucket `laravel` в стеке RustFS |
+| `make -C deployment grafana-dashboards-import`           | Импорт дашбордов в стек monitoring          |
+
+
+### Вспомогательные скрипты
+
+- **`deployment/sh-process-env.sh [--fill-missing] <.env_file> [<.env_file> ...]`** — заполнение шаблона `.env.example` с интерполяцией `${VAR}`. Флаг `--fill-missing` переключает скрипт в режим слияния
+- **`deployment/sh-process-compose-file.sh <compose-file>`** — подготовка compose-файла для `docker stack deploy`.
+
+
+### Минимальный воркфлоу деплоя
+
+1. Клон исходников проекта на сервер - `git clone`
+2. Запуск сборки соответствующего образа - `docker build -f ./docker/laravel/Dockerfile --target production -t laravel-application:production .`
+3. Копирование и заполнение переменных окружения проекта - `cp ./deployment/.env.example ./deployment/.env`
+4. Деплой всех стеков проекта - `make -C deployment stack-full-deploy`
+5. Создание бакета s3 для Laravel - `make -C deployment rustfs-create-bucket`
+6. Импорт Grafana дашбордов - `make -C deployment grafana-dashboards-import`

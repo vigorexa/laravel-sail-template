@@ -21,17 +21,11 @@ services:
             - '.:/var/www/html'
         networks:
             - application
-        healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:80/up"]
-            interval: 10s
-            start_period: 30s
-            retries: 3
-            timeout: 5s
         depends_on:
             pgsql:
-                condition: service_healthy
-            redis:
-                condition: service_healthy
+                condition: service_started
+            keydb:
+                condition: service_started
             mailpit:
                 condition: service_started
 
@@ -48,27 +42,15 @@ services:
             - 'application-pgsql:/var/lib/postgresql/data'
         networks:
             - application
-        healthcheck:
-            test: ["CMD", "pg_isready", "-q", "-d", "${DB_DATABASE}", "-U", "${DB_USERNAME}"]
-            interval: 10s
-            start_period: 30s
-            retries: 3
-            timeout: 5s
 
-    redis:
-        image: 'redis:7.4-alpine'
+    keydb:
+        image: 'eqalpha/keydb:latest'
         ports:
             - '127.0.0.1:${FORWARD_REDIS_PORT:-6379}:6379'
         volumes:
-            - 'application-redis:/data'
+            - 'application-keydb:/data'
         networks:
             - application
-        healthcheck:
-            test: ["CMD", "redis-cli", "ping"]
-            interval: 10s
-            start_period: 30s
-            retries: 3
-            timeout: 5s
 
     mailpit:
         image: 'axllent/mailpit:v1.19.3'
@@ -78,12 +60,14 @@ services:
         networks:
             - application
 
+
 networks:
     application:
         driver: bridge
 
+
 volumes:
     application-pgsql:
         driver: local
-    application-redis:
+    application-keydb:
         driver: local

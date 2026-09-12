@@ -57,6 +57,24 @@ services:
         max-size: "200k"
         max-file: "10"
 
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:v0.16.0
+    env_file:
+      - .env
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@pgsql:5432/${POSTGRES_DB}?sslmode=disable"
+    networks:
+      - pgsql
+      - app_monitoring_monitoring
+    logging:
+      options:
+        max-size: "200k"
+        max-file: "10"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
 
 networks:
   pgsql:
@@ -64,6 +82,8 @@ networks:
     driver: overlay
     attachable: true
   app_traefik_reverse-proxy:
+    external: true
+  app_monitoring_monitoring:
     external: true
 
 

@@ -13,7 +13,6 @@
 boost.json
 CLAUDE.md
 AGENTS.md
-ci-recs.md
 .phpunit.cache
 .phpunit.result.cache
 
@@ -52,12 +51,9 @@ docker-compose.yml
 docker-compose.*.yml
 docker-compose.override.yml
 Makefile
-process-env.sh
-process-compose-file.sh
-wait-for-it.sh
 Homestead.json
 Homestead.yaml
-
+deployment
 docs
 pint.json
 

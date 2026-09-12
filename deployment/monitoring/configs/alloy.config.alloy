@@ -1,0 +1,111 @@
+// ---------------------------------------------------------------------------
+// Logs
+// ---------------------------------------------------------------------------
+
+discovery.docker "linux" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "docker_logs" {
+  targets = []
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_swarm_service_name"]
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_stack_namespace"]
+    target_label  = "stack"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_swarm_task_name"]
+    target_label  = "task"
+  }
+}
+
+loki.source.docker "default" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.linux.targets
+  labels        = {"platform" = "docker"}
+  relabel_rules = discovery.relabel.docker_logs.rules
+  forward_to    = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Metrics — static targets on shared overlay networks (Swarm DNS)
+// ---------------------------------------------------------------------------
+
+prometheus.scrape "cadvisor" {
+  targets = [{
+    __address__ = "cadvisor:8080",
+  }]
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "15s"
+  job_name        = "cadvisor"
+}
+
+prometheus.scrape "traefik" {
+  targets = [{
+    __address__ = "traefik:8080",
+  }]
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "15s"
+  job_name        = "traefik"
+  metrics_path    = "/metrics"
+}
+
+prometheus.scrape "postgres_exporter" {
+  targets = [{
+    __address__ = "postgres_exporter:9187",
+  }]
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "15s"
+  job_name        = "postgres"
+}
+
+prometheus.scrape "redis_exporter" {
+  targets = [{
+    __address__ = "redis_exporter:9121",
+  }]
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "15s"
+  job_name        = "redis"
+}
+
+prometheus.scrape "rustfs" {
+  targets = [{
+    __address__ = "otel-collector:8889",
+  }]
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "15s"
+  job_name        = "rustfs"
+}
+
+prometheus.scrape "otel_collector" {
+  targets = [{
+    __address__ = "otel-collector:8888",
+  }]
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "15s"
+  job_name        = "otel-collector"
+}
+
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
